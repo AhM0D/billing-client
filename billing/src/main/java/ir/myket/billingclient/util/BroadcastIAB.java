@@ -1,11 +1,11 @@
 package ir.myket.billingclient.util;
 
-import static ir.myket.billingclient.util.ProxyBillingActivity.BILLING_RECEIVER_KEY;
 import static ir.myket.billingclient.IabHelper.BILLING_RESPONSE_RESULT_OK;
 import static ir.myket.billingclient.IabHelper.IABHELPER_ERROR_BASE;
 import static ir.myket.billingclient.IabHelper.IABHELPER_MISSING_TOKEN;
 import static ir.myket.billingclient.IabHelper.RESPONSE_BUY_INTENT;
 import static ir.myket.billingclient.IabHelper.getResponseDesc;
+import static ir.myket.billingclient.util.ProxyBillingActivity.BILLING_RECEIVER_KEY;
 
 import android.app.Activity;
 import android.content.Context;
@@ -19,9 +19,9 @@ import android.text.TextUtils;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.TimeUnit;
 
+import ir.myket.billingclient.IabHelper;
 import ir.myket.billingclient.util.communication.BillingSupportCommunication;
 import ir.myket.billingclient.util.communication.OnConnectListener;
-import ir.myket.billingclient.IabHelper;
 
 public class BroadcastIAB extends IAB {
 
@@ -34,27 +34,23 @@ public class BroadcastIAB extends IAB {
 	public static final String ITEM_TYPE_KEY = "itemType";
 	public static final String DEVELOPER_PAYLOAD_KEY = "developerPayload";
 	public static final String TOKEN_KEY = "token";
-
-	private static final String marketPostAction = ".iab";
-
-	private static final String MYKET_MARKET_ID = "3c97c0b07a6f4a0d1ae1cf8816396560";
-	private static final String BAZAAR_MARKET_ID = "6c02ea10518a07556a7b44e930478cb9";
-	private static final int MYKET_VERSION_CODE_WITH_BROADCAST = 900;
-	private static final int BAZAAR_VERSION_CODE_WITH_BROADCAST = 801301;
-
 	public static final String ping = ".ping";
 	public static final String billingSupport = ".billingSupport";
 	public static final String purchaseAction = ".purchase";
 	public static final String skuDetailAction = ".skuDetail";
 	public static final String getPurchaseAction = ".getPurchase";
 	public static final String consumeAction = ".consume";
-
+	private static final String marketPostAction = ".iab";
 	public static final String receivePingAction = ping + marketPostAction;
 	public static final String receiveBillingSupport = billingSupport + marketPostAction;
 	public static final String receivePurchaseAction = purchaseAction + marketPostAction;
 	public static final String receiveSkuDetailAction = skuDetailAction + marketPostAction;
 	public static final String receiveGetPurchaseAction = getPurchaseAction + marketPostAction;
 	public static final String receiveConsumeAction = consumeAction + marketPostAction;
+	private static final String MYKET_MARKET_ID = "3c97c0b07a6f4a0d1ae1cf8816396560";
+	private static final String BAZAAR_MARKET_ID = "6c02ea10518a07556a7b44e930478cb9";
+	private static final int MYKET_VERSION_CODE_WITH_BROADCAST = 900;
+	private static final int BAZAAR_VERSION_CODE_WITH_BROADCAST = 801301;
 	private final Context context;
 	private final String signatureBase64;
 
@@ -94,7 +90,7 @@ public class BroadcastIAB extends IAB {
 			if (checkMarketHasBroadCast(versionCode)) {
 				createIABReceiver();
 				registerBroadcast();
-				trySendPingToMyket();
+				trySendPingToMarket();
 				connectListenerWeakReference = new WeakReference<>(listener);
 				return true;
 			}
@@ -151,7 +147,8 @@ public class BroadcastIAB extends IAB {
 				return;
 			}
 
-			switch (intentAction) {
+			String action = intentAction.replace(marketId, "");
+			switch (action) {
 				case receivePingAction:
 					OnConnectListener listener = safeGetFromWeakReference(connectListenerWeakReference);
 					mSetupDone = true;
@@ -236,7 +233,7 @@ public class BroadcastIAB extends IAB {
 		IABReceiver.addObserver(iabReceiver);
 	}
 
-	private void trySendPingToMyket() {
+	private void trySendPingToMarket() {
 		Intent intent = getNewIntentForBroadcast();
 		intent.setAction(getAction(ping));
 		context.sendBroadcast(intent);
@@ -244,8 +241,8 @@ public class BroadcastIAB extends IAB {
 
 	private Intent getNewIntentForBroadcast() {
 		Intent intent = new Intent();
-		String myketPackageName = marketId;
-		intent.setPackage(myketPackageName);
+		String marketPackageName = marketId;
+		intent.setPackage(marketPackageName);
 		Bundle bundle = new Bundle();
 		bundle.putString(PACKAGE_NAME_KEY, context.getPackageName());
 		bundle.putString(SECURE_KEY, signatureBase64);
